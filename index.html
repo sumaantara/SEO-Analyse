@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Website Audit AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0a0a0f;--surface:#111118;--surface2:#18181f;--surface3:#1e1e28;
+    --border:#2a2a3a;--border2:#353548;
+    --text:#f0f0f8;--text2:#9898b0;--text3:#5a5a75;
+    --accent:#7c6af7;--accent2:#a89df8;--accent3:#3d3575;
+    --green:#22d984;--green2:#0d7a42;--greenbg:#0a2018;
+    --yellow:#f0c040;--yellowbg:#1e1800;
+    --red:#f05050;--redbg:#1e0808;
+    --blue:#50a0f0;--bluebg:#081828;
+    --orange:#f07850;--orangebg:#1e0e08;
+    --radius:12px;--radius-sm:8px;--radius-xs:6px;
+    --mono:'DM Mono',monospace;
+    --sans:'DM Sans',sans-serif;
+    --display:'Syne',sans-serif;
+  }
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh}
+  #app{min-height:100vh}
+
+  .page-hero{
+    background:var(--bg);
+    padding:0 0 80px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero-grid{
+    position:absolute;inset:0;
+    background-image:
+      linear-gradient(var(--border) 1px,transparent 1px),
+      linear-gradient(90deg,var(--border) 1px,transparent 1px);
+    background-size:60px 60px;
+    opacity:0.25;
+    mask-image:radial-gradient(ellipse 80% 80% at 50% 0%,black 30%,transparent 100%);
+  }
+  .hero-glow{
+    position:absolute;top:-120px;left:50%;transform:translateX(-50%);
+    width:700px;height:400px;
+    background:radial-gradient(ellipse,rgba(124,106,247,0.18) 0%,transparent 70%);
+    pointer-events:none;
+  }
+  .hero-inner{
+    position:relative;z-index:1;
+    max-width:780px;margin:0 auto;padding:72px 24px 0;
+    text-align:center;
+  }
+  .hero-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(124,106,247,0.12);border:1px solid rgba(124,106,247,0.3);
+    padding:6px 14px;border-radius:999px;
+    font-size:12px;font-family:var(--mono);color:var(--accent2);
+    margin-bottom:28px;letter-spacing:0.08em;text-transform:uppercase;
+  }
+  .hero-badge span{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+  .hero-title{
+    font-family:var(--display);font-size:clamp(36px,6vw,64px);font-weight:800;
+    line-height:1.05;letter-spacing:-0.03em;
+    color:var(--text);margin-bottom:16px;
+  }
+  .hero-title span{
+    background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 60%,#c0b8ff 100%);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  }
+  .hero-sub{
+    font-size:17px;color:var(--text2);margin-bottom:48px;
+    font-weight:300;max-width:520px;margin-left:auto;margin-right:auto;
+  }
+  .url-form{
+    display:flex;gap:0;
+    background:var(--surface);
+    border:1px solid var(--border2);
+    border-radius:var(--radius);
+    padding:6px;
+    max-width:640px;margin:0 auto;
+    box-shadow:0 0 0 1px rgba(124,106,247,0.1),0 24px 48px rgba(0,0,0,0.4);
+    transition:box-shadow 0.2s,border-color 0.2s;
+  }
+  .url-form:focus-within{border-color:var(--accent3);box-shadow:0 0 0 3px rgba(124,106,247,0.15),0 24px 48px rgba(0,0,0,0.4)}
+  .url-input{
+    flex:1;background:transparent;border:none;outline:none;
+    padding:12px 16px;font-size:15px;color:var(--text);
+    font-family:var(--mono);min-width:0;
+  }
+  .url-input::placeholder{color:var(--text3)}
+  .url-prefix{
+    display:flex;align-items:center;padding:0 0 0 14px;
+    color:var(--text3);font-family:var(--mono);font-size:13px;white-space:nowrap;
+  }
+  .analyze-btn{
+    background:var(--accent);color:white;border:none;cursor:pointer;
+    padding:12px 24px;border-radius:var(--radius-sm);
+    font-family:var(--display);font-size:14px;font-weight:600;
+    letter-spacing:0.02em;
+    transition:all 0.2s;white-space:nowrap;
+    display:flex;align-items:center;gap:8px;
+  }
+  .analyze-btn:hover{background:#8f7fff;transform:translateY(-1px)}
+  .analyze-btn:active{transform:translateY(0)}
+  .analyze-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+  .features-row{
+    display:flex;gap:28px;justify-content:center;flex-wrap:wrap;
+    margin-top:32px;
+  }
+  .feat{display:flex;align-items:center;gap:8px;color:var(--text3);font-size:13px}
+  .feat-dot{width:4px;height:4px;border-radius:50%;background:var(--accent3)}
+
+  .container{max-width:1100px;margin:0 auto;padding:0 24px}
+
+  .loading-screen{
+    text-align:center;padding:80px 24px;
+    display:flex;flex-direction:column;align-items:center;gap:24px;
+  }
+  .spinner-ring{
+    width:64px;height:64px;border-radius:50%;
+    border:2px solid var(--border2);
+    border-top-color:var(--accent);
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-steps{display:flex;flex-direction:column;gap:8px;text-align:left;width:300px}
+  .loading-step{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text3);transition:color 0.3s}
+  .loading-step.active{color:var(--text2)}
+  .loading-step.done{color:var(--green)}
+  .step-dot{width:6px;height:6px;border-radius:50%;background:var(--border2);flex-shrink:0;transition:background 0.3s}
+  .loading-step.active .step-dot{background:var(--accent);animation:pulse 1s infinite}
+  .loading-step.done .step-dot{background:var(--green)}
+
+  .dashboard{padding:40px 0 80px}
+  .dash-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:32px}
+  .dash-url{font-family:var(--mono);font-size:13px;color:var(--text3);display:flex;align-items:center;gap:8px}
+  .dash-url-val{color:var(--accent2)}
+  .new-audit-btn{
+    background:transparent;border:1px solid var(--border2);color:var(--text2);
+    padding:8px 16px;border-radius:var(--radius-sm);
+    font-family:var(--sans);font-size:13px;cursor:pointer;
+    display:flex;align-items:center;gap:6px;
+    transition:all 0.15s;
+  }
+  .new-audit-btn:hover{border-color:var(--accent3);color:var(--text)}
+
+  .scores-hero{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:32px;margin-bottom:24px;
+    display:grid;grid-template-columns:200px 1fr;gap:32px;align-items:center;
+  }
+  @media(max-width:640px){.scores-hero{grid-template-columns:1fr}.overall-ring-wrap{text-align:center}}
+  .overall-ring-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .ring-label{font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);font-family:var(--mono)}
+  .ring-score{font-family:var(--display);font-size:52px;font-weight:800;letter-spacing:-0.04em;line-height:1}
+  .ring-grade{font-family:var(--mono);font-size:12px;padding:3px 10px;border-radius:999px;display:inline-block;margin-top:4px}
+  .grade-a{background:rgba(34,217,132,0.15);color:var(--green);border:1px solid var(--green2)}
+  .grade-b{background:rgba(240,192,64,0.15);color:var(--yellow);border:1px solid #6b5500}
+  .grade-c{background:rgba(240,120,80,0.15);color:var(--orange);border:1px solid #6b3000}
+  .grade-d{background:rgba(240,80,80,0.15);color:var(--red);border:1px solid #6b0000}
+  .sub-scores{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  @media(max-width:480px){.sub-scores{grid-template-columns:1fr}}
+  .sub-score-card{
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:14px 16px;
+  }
+  .sub-score-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .sub-score-label{font-size:12px;text-transform:uppercase;letter-spacing:0.07em;color:var(--text3);font-family:var(--mono)}
+  .sub-score-num{font-family:var(--display);font-size:22px;font-weight:700}
+  .progress-bar{height:4px;background:var(--border);border-radius:999px;overflow:hidden}
+  .progress-fill{height:100%;border-radius:999px;transition:width 1s ease}
+
+  .section-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(480px,1fr));gap:20px}
+  @media(max-width:520px){.section-grid{grid-template-columns:1fr}}
+
+  .audit-section{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);overflow:hidden;
+  }
+  .audit-section-header{
+    padding:18px 20px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+    transition:background 0.15s;
+  }
+  .audit-section-header:hover{background:var(--surface2)}
+  .section-title-row{display:flex;align-items:center;gap:10px}
+  .section-icon{
+    width:32px;height:32px;border-radius:var(--radius-xs);
+    display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;
+  }
+  .section-title{font-family:var(--display);font-size:15px;font-weight:600}
+  .section-score-badge{
+    font-family:var(--mono);font-size:12px;font-weight:500;
+    padding:3px 10px;border-radius:999px;
+  }
+  .section-body{padding:20px}
+  .section-toggle{color:var(--text3);font-size:18px;transition:transform 0.2s;display:inline-block}
+  .section-toggle.open{transform:rotate(180deg)}
+
+  .issues-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+  .issue-item{
+    display:flex;gap:10px;align-items:flex-start;
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius-xs);padding:10px 12px;
+  }
+  .impact-badge{
+    font-size:10px;text-transform:uppercase;letter-spacing:0.08em;
+    padding:2px 7px;border-radius:999px;white-space:nowrap;flex-shrink:0;margin-top:1px;
+    font-family:var(--mono);font-weight:500;
+  }
+  .impact-high{background:rgba(240,80,80,0.15);color:var(--red);border:1px solid #5a1010}
+  .impact-medium{background:rgba(240,192,64,0.15);color:var(--yellow);border:1px solid #5a4500}
+  .impact-low{background:rgba(80,160,240,0.15);color:var(--blue);border:1px solid #0a3060}
+  .issue-text{font-size:13px;color:var(--text2);line-height:1.5}
+
+  .recs-list{display:flex;flex-direction:column;gap:8px}
+  .rec-item{
+    display:flex;gap:10px;align-items:flex-start;
+    border-left:2px solid var(--border2);padding:8px 0 8px 14px;
+  }
+  .rec-item.pri-high{border-left-color:var(--red)}
+  .rec-item.pri-medium{border-left-color:var(--yellow)}
+  .rec-item.pri-low{border-left-color:var(--blue)}
+  .rec-content{flex:1}
+  .rec-text{font-size:13px;color:var(--text2);line-height:1.5}
+  .rec-pri{font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.07em;margin-top:3px}
+
+  .section-divider{height:1px;background:var(--border);margin:16px 0}
+  .section-sub-label{font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);font-family:var(--mono);margin-bottom:10px}
+
+  .error-box{
+    background:var(--redbg);border:1px solid #4a1a1a;
+    border-radius:var(--radius);padding:20px 24px;
+    color:var(--red);font-size:14px;
+    display:flex;align-items:center;gap:12px;
+    max-width:600px;margin:40px auto;
+  }
+
+  .ai-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;
+    color:var(--accent2);background:rgba(124,106,247,0.1);
+    border:1px solid rgba(124,106,247,0.2);
+    padding:2px 8px;border-radius:999px;margin-left:8px;
+  }
+
+  .meta-bar{
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:12px 16px;
+    margin-bottom:24px;
+    display:flex;gap:24px;flex-wrap:wrap;
+  }
+  .meta-item{display:flex;flex-direction:column;gap:2px}
+  .meta-key{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);font-family:var(--mono)}
+  .meta-val{font-size:13px;color:var(--text2)}
+
+  .empty-state{text-align:center;padding:48px 24px;color:var(--text3)}
+  .empty-state p{font-size:13px;margin-top:8px}
+
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .fade-in{animation:fadeIn 0.4s ease both}
+
+  .score-color-excellent{color:var(--green)}
+  .score-color-good{color:#a8e060}
+  .score-color-fair{color:var(--yellow)}
+  .score-color-poor{color:var(--orange)}
+  .score-color-bad{color:var(--red)}
+
+  .progress-excellent{background:var(--green)}
+  .progress-good{background:#a8e060}
+  .progress-fair{background:var(--yellow)}
+  .progress-poor{background:var(--orange)}
+  .progress-bad{background:var(--red)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const SECTIONS = ['seo','performance','technical','ux','security'];
+const SECTION_META = {
+  seo:{label:'SEO',icon:'🔍',desc:'Search engine optimization analysis'},
+  performance:{label:'Performance',icon:'⚡',desc:'Page speed & resource efficiency'},
+  technical:{label:'Technical',icon:'⚙️',desc:'Infrastructure & code health'},
+  ux:{label:'UX / UI',icon:'✦',desc:'User experience & interface quality'},
+  security:{label:'Security',icon:'🛡',desc:'HTTPS, headers & vulnerabilities'},
+};
+
+let state = {
+  view: 'home', // home | loading | results | error
+  url: '',
+  inputUrl: '',
+  loadingStep: 0,
+  results: null,
+  error: null,
+  openSections: {seo:true,performance:true,technical:true,ux:true,security:true},
+};
+
+const LOADING_STEPS = [
+  'Fetching page content...',
+  'Analyzing HTML structure...',
+  'Running SEO audit...',
+  'Checking performance signals...',
+  'Scanning security headers...',
+  'Generating AI recommendations...',
+  'Compiling final report...',
+];
+
+function render(){
+  const app = document.getElementById('app');
+  if(state.view==='home') app.innerHTML = renderHome();
+  else if(state.view==='loading') app.innerHTML = renderLoading();
+  else if(state.view==='results') app.innerHTML = renderResults();
+  else if(state.view==='error') app.innerHTML = renderError();
+  attachHandlers();
+}
+
+function renderHome(){
+  return `
+  <div class="page-hero">
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <div class="hero-badge"><span></span>AI-Powered Analysis</div>
+      <h1 class="hero-title">Website <span>Audit AI</span></h1>
+      <p class="hero-sub">Deep analysis of SEO, performance, security, and UX — powered by Claude AI. Get actionable recommendations in seconds.</p>
+      <div class="url-form">
+        <span class="url-prefix">https://</span>
+        <input class="url-input" id="urlInput" type="text" placeholder="example.com" value="${state.inputUrl.replace(/^https?:\/\//,'')}" autocomplete="off" spellcheck="false" />
+        <button class="analyze-btn" id="analyzeBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Analyze
+        </button>
+      </div>
+      <div class="features-row">
+        <span class="feat"><span class="feat-dot"></span>SEO Score</span>
+        <span class="feat"><span class="feat-dot"></span>Performance</span>
+        <span class="feat"><span class="feat-dot"></span>Security Scan</span>
+        <span class="feat"><span class="feat-dot"></span>UX Insights</span>
+        <span class="feat"><span class="feat-dot"></span>AI Recommendations</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderLoading(){
+  return `
+  <div class="page-hero" style="padding-bottom:40px">
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <div class="hero-badge"><span></span>Analyzing</div>
+      <h1 class="hero-title" style="font-size:clamp(28px,4vw,44px)">Running <span>full audit</span></h1>
+      <p class="hero-sub" style="font-family:var(--mono);font-size:14px">${state.url}</p>
+    </div>
+  </div>
+  <div class="container">
+    <div class="loading-screen">
+      <div class="spinner-ring"></div>
+      <div class="loading-steps">
+        ${LOADING_STEPS.map((s,i)=>`
+          <div class="loading-step ${i<state.loadingStep?'done':i===state.loadingStep?'active':''}">
+            <div class="step-dot"></div>
+            <span>${s}</span>
+          </div>`).join('')}
+      </div>
+      <p style="color:var(--text3);font-size:13px">This may take 20–30 seconds for AI analysis</p>
+    </div>
+  </div>`;
+}
+
+function renderError(){
+  return `
+  <div class="page-hero" style="padding-bottom:40px">
+    <div class="hero-grid"></div>
+    <div class="hero-inner" style="padding-top:60px">
+      <h1 class="hero-title" style="font-size:36px">Audit <span>Failed</span></h1>
+    </div>
+  </div>
+  <div class="container">
+    <div class="error-box">
+      <span style="font-size:20px">⚠</span>
+      <div>
+        <strong style="display:block;margin-bottom:4px">Analysis Error</strong>
+        <span style="color:rgba(240,80,80,0.8);font-size:13px">${state.error||'Something went wrong. Please check the URL and try again.'}</span>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:16px">
+      <button class="new-audit-btn" id="retryBtn" style="display:inline-flex">← Try Again</button>
+    </div>
+  </div>`;
+}
+
+function scoreColorClass(s){
+  if(s>=90) return 'score-color-excellent';
+  if(s>=75) return 'score-color-good';
+  if(s>=55) return 'score-color-fair';
+  if(s>=35) return 'score-color-poor';
+  return 'score-color-bad';
+}
+function progressClass(s){
+  if(s>=90) return 'progress-excellent';
+  if(s>=75) return 'progress-good';
+  if(s>=55) return 'progress-fair';
+  if(s>=35) return 'progress-poor';
+  return 'progress-bad';
+}
+function gradeClass(s){
+  if(s>=90) return 'grade-a';
+  if(s>=75) return 'grade-b';
+  if(s>=55) return 'grade-c';
+  return 'grade-d';
+}
+function gradeLabel(s){
+  if(s>=90) return 'Excellent';
+  if(s>=75) return 'Good';
+  if(s>=55) return 'Fair';
+  if(s>=35) return 'Poor';
+  return 'Critical';
+}
+
+function renderResults(){
+  const r = state.results;
+  if(!r) return '';
+  const overall = r.overallScore||0;
+  return `
+  <div class="page-hero" style="padding-bottom:32px">
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-inner" style="padding-top:56px;padding-bottom:0">
+      <div class="hero-badge"><span></span>Audit Complete</div>
+      <h1 class="hero-title" style="font-size:clamp(28px,4vw,44px)">Your <span>Audit Report</span></h1>
+    </div>
+  </div>
+  <div class="container dashboard">
+    <div class="dash-header">
+      <div class="dash-url">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span class="dash-url-val">${state.url}</span>
+      </div>
+      <button class="new-audit-btn" id="newAuditBtn">+ New Audit</button>
+    </div>
+
+    <div class="meta-bar">
+      ${r.meta ? [
+        r.meta.title ? `<div class="meta-item"><span class="meta-key">Page Title</span><span class="meta-val">${r.meta.title.substring(0,60)}${r.meta.title.length>60?'…':''}</span></div>` : '',
+        r.meta.https !== undefined ? `<div class="meta-item"><span class="meta-key">HTTPS</span><span class="meta-val" style="color:${r.meta.https?'var(--green)':'var(--red)'}">${r.meta.https ? '✓ Secure' : '✗ Insecure'}</span></div>` : '',
+        r.meta.hasViewport !== undefined ? `<div class="meta-item"><span class="meta-key">Mobile</span><span class="meta-val" style="color:${r.meta.hasViewport?'var(--green)':'var(--yellow)'}">${r.meta.hasViewport?'✓ Viewport set':'⚠ No viewport'}</span></div>` : '',
+        r.meta.imageCount !== undefined ? `<div class="meta-item"><span class="meta-key">Images</span><span class="meta-val">${r.meta.imageCount}</span></div>` : '',
+        r.meta.wordCount !== undefined ? `<div class="meta-item"><span class="meta-key">Word Count</span><span class="meta-val">~${r.meta.wordCount}</span></div>` : '',
+      ].filter(Boolean).join('') : ''}
+    </div>
+
+    <div class="scores-hero fade-in">
+      <div class="overall-ring-wrap">
+        <span class="ring-label">Overall Score</span>
+        <span class="ring-score ${scoreColorClass(overall)}">${overall}</span>
+        <span class="ring-grade ${gradeClass(overall)}">${gradeLabel(overall)}</span>
+      </div>
+      <div class="sub-scores">
+        ${['seo','performance','technical','ux','security'].map(k=>{
+          const sc = r[k+'Score']||0;
+          return `<div class="sub-score-card">
+            <div class="sub-score-top">
+              <span class="sub-score-label">${SECTION_META[k].label}</span>
+              <span class="sub-score-num ${scoreColorClass(sc)}">${sc}</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill ${progressClass(sc)}" style="width:${sc}%"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="section-grid">
+      ${SECTIONS.map(k => renderSection(k)).join('')}
+    </div>
+  </div>`;
+}
+
+function renderSection(key){
+  const r = state.results;
+  const sm = SECTION_META[key];
+  const sc = r[key+'Score']||0;
+  const issues = (r.issues||[]).filter(i=>i.category.toLowerCase().includes(key.toLowerCase().slice(0,4)));
+  const recs = (r.recommendations||[]).filter(i=>i.category.toLowerCase().includes(key.toLowerCase().slice(0,4)));
+  const open = state.openSections[key];
+
+  return `<div class="audit-section fade-in">
+    <div class="audit-section-header" data-section="${key}">
+      <div class="section-title-row">
+        <div class="section-icon" style="background:${sectionBg(key)}">${sm.icon}</div>
+        <div>
+          <span class="section-title">${sm.label}</span>
+          <span class="ai-badge">AI</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="section-score-badge ${scoreBadgeClass(sc)}">${sc}/100</span>
+        <span class="section-toggle ${open?'open':''}">▾</span>
+      </div>
+    </div>
+    ${open ? `<div class="section-body">
+      ${issues.length?`
+        <div class="section-sub-label">Issues Found (${issues.length})</div>
+        <div class="issues-list">
+          ${issues.slice(0,5).map(iss=>`
+            <div class="issue-item">
+              <span class="impact-badge impact-${iss.impact.toLowerCase()}">${iss.impact}</span>
+              <span class="issue-text">${iss.issue}</span>
+            </div>`).join('')}
+        </div>
+      `:''
+      }
+      ${recs.length?`
+        ${issues.length?'<div class="section-divider"></div>':''}
+        <div class="section-sub-label">Recommendations (${recs.length})</div>
+        <div class="recs-list">
+          ${recs.slice(0,4).map(rec=>`
+            <div class="rec-item pri-${rec.priority.toLowerCase()}">
+              <div class="rec-content">
+                <div class="rec-text">${rec.recommendation}</div>
+                <div class="rec-pri">${rec.priority} priority</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      `:''}
+      ${!issues.length && !recs.length ? `<div class="empty-state">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <p>No issues found in this category</p>
+      </div>` : ''}
+    </div>` : ''}
+  </div>`;
+}
+
+function sectionBg(k){
+  const m={seo:'rgba(80,160,240,0.12)',performance:'rgba(240,192,64,0.12)',technical:'rgba(124,106,247,0.12)',ux:'rgba(34,217,132,0.12)',security:'rgba(240,80,80,0.12)'};
+  return m[k]||'rgba(124,106,247,0.12)';
+}
+function scoreBadgeClass(s){
+  if(s>=75) return 'grade-a';
+  if(s>=55) return 'grade-b';
+  if(s>=35) return 'grade-c';
+  return 'grade-d';
+}
+
+function attachHandlers(){
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const urlInput = document.getElementById('urlInput');
+  if(analyzeBtn && urlInput){
+    analyzeBtn.addEventListener('click', ()=>startAnalysis());
+    urlInput.addEventListener('keydown', e=>{if(e.key==='Enter')startAnalysis()});
+    urlInput.addEventListener('input', e=>{
+      state.inputUrl = 'https://' + e.target.value.replace(/^https?:\/\//,'');
+    });
+  }
+  const newAuditBtn = document.getElementById('newAuditBtn');
+  if(newAuditBtn) newAuditBtn.addEventListener('click',()=>{state.view='home';state.results=null;render()});
+  const retryBtn = document.getElementById('retryBtn');
+  if(retryBtn) retryBtn.addEventListener('click',()=>{state.view='home';render()});
+  document.querySelectorAll('.audit-section-header[data-section]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const k=el.dataset.section;
+      state.openSections[k]=!state.openSections[k];
+      render();
+    });
+  });
+}
+
+function getInputUrl(){
+  const inp = document.getElementById('urlInput');
+  const raw = inp ? inp.value.trim() : state.inputUrl;
+  if(!raw) return null;
+  let url = raw.replace(/^https?:\/\//,'');
+  if(!url) return null;
+  return 'https://'+url;
+}
+
+function startAnalysis(){
+  const url = getInputUrl();
+  if(!url || !url.match(/^https:\/\/.+\..+/)){
+    alert('Please enter a valid website URL (e.g. example.com)');
+    return;
+  }
+  state.url = url;
+  state.view = 'loading';
+  state.loadingStep = 0;
+  state.error = null;
+  state.results = null;
+  render();
+  runLoadingSteps();
+  fetchAudit(url);
+}
+
+function runLoadingSteps(){
+  const tick = ()=>{
+    if(state.view!=='loading') return;
+    if(state.loadingStep < LOADING_STEPS.length-1){
+      state.loadingStep++;
+      render();
+      setTimeout(tick, 2200 + Math.random()*1200);
+    }
+  };
+  setTimeout(tick, 1800);
+}
+
+async function fetchAudit(url){
+  const prompt = buildPrompt(url);
+  try{
+    const resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1800,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    if(!resp.ok){
+      const err = await resp.text();
+      throw new Error('API error: '+resp.status);
+    }
+    const data = await resp.json();
+    const text = data.content.map(b=>b.type==='text'?b.text:'').join('');
+    const clean = text.replace(/```json\s*/,'').replace(/```\s*$/,'').trim();
+    let parsed;
+    try{ parsed = JSON.parse(clean); }
+    catch(e){ throw new Error('Could not parse AI response. Please try again.'); }
+    state.results = parsed;
+    state.view = 'results';
+    render();
+  } catch(e){
+    state.error = e.message||'Unknown error occurred';
+    state.view = 'error';
+    render();
+  }
+}
+
+function buildPrompt(url){
+  const domain = url.replace(/^https?:\/\//,'').split('/')[0];
+  const isHttps = url.startsWith('https://');
+  return `You are a senior web auditor and SEO expert. Perform a comprehensive website audit for: ${url}
+
+Based on what you know about this domain (${domain}), perform a realistic audit. Consider:
+- Is it HTTPS? ${isHttps ? 'Yes' : 'No'}
+- Domain: ${domain}
+- Common patterns for this type of website
+
+Generate a detailed audit report. Return ONLY valid JSON (no markdown fences, no preamble):
+
+{
+  "seoScore": <0-100 integer>,
+  "performanceScore": <0-100 integer>,
+  "technicalScore": <0-100 integer>,
+  "uxScore": <0-100 integer>,
+  "securityScore": <0-100 integer>,
+  "overallScore": <weighted average 0-100>,
+  "meta": {
+    "title": "<realistic page title for ${domain}>",
+    "https": ${isHttps},
+    "hasViewport": <boolean>,
+    "imageCount": <estimated integer>,
+    "wordCount": <estimated integer>
+  },
+  "issues": [
+    {"category": "SEO", "issue": "<specific issue>", "impact": "High|Medium|Low"},
+    {"category": "SEO", "issue": "<specific issue>", "impact": "High|Medium|Low"},
+    {"category": "Performance", "issue": "<specific issue>", "impact": "High|Medium|Low"},
+    {"category": "Performance", "issue": "<specific issue>", "impact": "Medium|Low"},
+    {"category": "Technical", "issue": "<specific issue>", "impact": "High|Medium|Low"},
+    {"category": "Technical", "issue": "<specific issue>", "impact": "Medium|Low"},
+    {"category": "UX", "issue": "<specific issue>", "impact": "High|Medium|Low"},
+    {"category": "UX", "issue": "<specific issue>", "impact": "Medium|Low"},
+    {"category": "Security", "issue": "<specific issue>", "impact": "High|Medium|Low"}
+  ],
+  "recommendations": [
+    {"category": "SEO", "recommendation": "<actionable recommendation>", "priority": "High|Medium|Low"},
+    {"category": "SEO", "recommendation": "<actionable recommendation>", "priority": "High|Medium|Low"},
+    {"category": "Performance", "recommendation": "<actionable recommendation>", "priority": "High|Medium|Low"},
+    {"category": "Performance", "recommendation": "<actionable recommendation>", "priority": "Medium|Low"},
+    {"category": "Technical", "recommendation": "<actionable recommendation>", "priority": "High|Medium|Low"},
+    {"category": "UX", "recommendation": "<actionable recommendation>", "priority": "High|Medium|Low"},
+    {"category": "UX", "recommendation": "<actionable recommendation>", "priority": "Medium|Low"},
+    {"category": "Security", "recommendation": "<actionable recommendation>", "priority": "High|Medium|Low"},
+    {"category": "Security", "recommendation": "<actionable recommendation>", "priority": "Medium|Low"}
+  ]
+}
+
+Make scores realistic and specific to this domain. Be direct and actionable. All issues and recommendations should be specific to ${domain}.`;
+}
+
+render();
+</script>
+</body>
+</html>
